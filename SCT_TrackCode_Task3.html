@@ -1,0 +1,94 @@
+<script>
+    const boardElement = document.getElementById("board");
+    const statusElement = document.getElementById("status");
+    const modeSelect = document.getElementById("mode");
+  
+    let boardCells = [];
+    let gameState = [];
+    let currentPlayer = "X";
+    let gameActive = true;
+    let gameMode = "pvp";
+  
+    const WINNING_COMBINATIONS = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+  
+    function startGame() {
+      boardElement.innerHTML = "";
+      gameState = Array(9).fill("");
+      currentPlayer = "X";
+      gameActive = true;
+      gameMode = modeSelect.value;
+      statusElement.textContent = `Player ${currentPlayer}'s turn`;
+  
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        cell.addEventListener("click", handleCellClick);
+        boardElement.appendChild(cell);
+      }
+  
+      boardCells = document.querySelectorAll(".cell");
+    }
+  
+    function handleCellClick(event) {
+      const index = event.target.dataset.index;
+      if (!gameActive || gameState[index] !== "") return;
+      makeMove(index, currentPlayer);
+      if (gameMode === "cpu" && currentPlayer === "O" && gameActive) {
+        setTimeout(computerMove, 400);
+      }
+    }
+  
+    function makeMove(index, player) {
+      gameState[index] = player;
+      boardCells[index].textContent = player;
+  
+      const winningCombo = checkWinner(player);
+  
+      if (winningCombo) {
+        highlightWinningCells(winningCombo);
+        statusElement.textContent = `Player ${player} wins!`;
+        gameActive = false;
+      } else if (!gameState.includes("")) {
+        statusElement.textContent = "It's a draw!";
+        gameActive = false;
+      } else {
+        currentPlayer = player === "X" ? "O" : "X";
+        statusElement.textContent = `Player ${currentPlayer}'s turn`;
+      }
+    }
+  
+    function checkWinner(player) {
+      for (let combo of WINNING_COMBINATIONS) {
+        if (combo.every(index => gameState[index] === player)) {
+          return combo;
+        }
+      }
+      return null;
+    }
+  
+    function highlightWinningCells(combo) {
+      combo.forEach(index => {
+        boardCells[index].style.backgroundColor = "#90ee90";
+      });
+    }
+  
+    function computerMove() {
+      const available = gameState
+        .map((value, index) => value === "" ? index : null)
+        .filter(index => index !== null);
+  
+      if (available.length === 0) return;
+  
+      const randomIndex = available[Math.floor(Math.random() * available.length)];
+      makeMove(randomIndex, "O");
+    }
+  
+    modeSelect.addEventListener("change", startGame);
+    window.onload = startGame;
+  </script>
+  
