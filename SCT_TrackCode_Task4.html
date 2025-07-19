@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>To-Do List with Priority</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      background: white;
+      max-width: 600px;
+      margin: auto;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"],
+    input[type="datetime-local"],
+    select {
+      flex: 1 1 45%;
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      flex: 1 1 100%;
+      padding: 0.6rem;
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #218838;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9f9f9;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      margin-bottom: 0.5rem;
+      border-radius: 5px;
+    }
+
+    .task-item.completed span {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+
+    .task-info {
+      flex-grow: 1;
+    }
+
+    .priority-high {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    .priority-medium {
+      color: #fd7e14;
+      font-weight: bold;
+    }
+
+    .priority-low {
+      color: #007bff;
+      font-weight: bold;
+    }
+
+    .task-buttons button {
+      margin-left: 5px;
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .complete-btn {
+      background: #17a2b8;
+      color: white;
+    }
+
+    .edit-btn {
+      background: #ffc107;
+      color: white;
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 To-Do List </h1>
+    <form id="task-form">
+      <input type="text" id="task-input" placeholder="Task description" required />
+      <input type="datetime-local" id="task-datetime" required />
+      <select id="task-priority" required>
+        <option value="" disabled selected>Select Priority</option>
+        <option value="High">🔴 High</option>
+        <option value="Medium">🟠 Medium</option>
+        <option value="Low">🔵 Low</option>
+      </select>
+      <button type="submit">➕ Add Task</button>
+    </form>
+
+    <ul id="task-list"></ul>
+  </div>
+
+  <script>
+    const form = document.getElementById("task-form");
+    const taskInput = document.getElementById("task-input");
+    const datetimeInput = document.getElementById("task-datetime");
+    const priorityInput = document.getElementById("task-priority");
+    const taskList = document.getElementById("task-list");
+
+    // Block past dates
+    const now = new Date();
+    datetimeInput.min = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+    function renderTasks() {
+      taskList.innerHTML = "";
+      tasks.forEach((task, index) => {
+        const li = document.createElement("li");
+        li.className = "task-item";
+        if (task.completed) li.classList.add("completed");
+
+        const info = document.createElement("div");
+        info.className = "task-info";
+
+        const priorityClass = {
+          High: "priority-high",
+          Medium: "priority-medium",
+          Low: "priority-low"
+        }[task.priority] || "";
+
+        info.innerHTML = `
+          <span class="${priorityClass}">[${task.priority}]</span>
+          <span> ${task.text} (${task.datetime})</span>
+        `;
+
+        const btns = document.createElement("div");
+        btns.className = "task-buttons";
+
+        const completeBtn = document.createElement("button");
+        completeBtn.textContent = task.completed ? "Undo" : "Complete";
+        completeBtn.className = "complete-btn";
+        completeBtn.onclick = () => toggleComplete(index);
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.className = "edit-btn";
+        editBtn.onclick = () => editTask(index);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "delete-btn";
+        deleteBtn.onclick = () => deleteTask(index);
+
+        btns.append(completeBtn, editBtn, deleteBtn);
+        li.append(info, btns);
+        taskList.appendChild(li);
+      });
+    }
+
+    function addTask(e) {
+      e.preventDefault();
+      const text = taskInput.value.trim();
+      const datetime = datetimeInput.value;
+      const priority = priorityInput.value;
+
+      if (!text || !datetime || !priority) return;
+
+      const taskTime = new Date(datetime);
+      if (taskTime < new Date()) {
+        alert("Please select a future date/time.");
+        return;
+      }
+
+      tasks.push({ text, datetime, priority, completed: false });
+      saveTasks();
+      form.reset();
+      datetimeInput.min = new Date().toISOString().slice(0,16);
+    }
+
+    function toggleComplete(index) {
+      tasks[index].completed = !tasks[index].completed;
+      saveTasks();
+    }
+
+    function deleteTask(index) {
+      if (confirm("Delete this task?")) {
+        tasks.splice(index, 1);
+        saveTasks();
+      }
+    }
+
+    function editTask(index) {
+      const newText = prompt("Edit task:", tasks[index].text);
+      if (newText) {
+        tasks[index].text = newText;
+        saveTasks();
+      }
+    }
+
+    function saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    form.addEventListener("submit", addTask);
+    renderTasks();
+  </script>
+</body>
+</html>
