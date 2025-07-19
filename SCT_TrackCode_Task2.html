@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WEBWATCH</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "times new roman", sans-serif;
+      background: linear-gradient(120deg, #a1c4fd, #c2e9fb);
+      color: black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 25px;
+      color: #2c3e50;
+    }
+
+    .stopwatch {
+      background: white;
+      border-radius: 16px;
+      box-shadow: rgba(0, 0, 0, 0.5);
+      padding: 40px 30px;
+      text-align: center;
+      width: 100;
+      max-width: 400px;
+    }
+
+    #time {
+      font-size: 3rem;
+      font-weight: bold;
+      margin-bottom: 30px;
+      color: red;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .buttons button {
+      flex: 1 1 40%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+      color: white;
+    }
+
+    .buttons button:hover {
+      transform: translateY(-2px);
+    }
+
+    .start  { background-color: #27ae60; }
+    .pause  { background-color: #f39c12; }
+    .reset  { background-color: #e74c3c; }
+    .lap    { background-color: #2980b9; }
+
+    ul#laps {
+      list-style-type: square;;
+      text-align: left;
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 0;
+      margin-top: 10px;
+    }
+
+    ul#laps li {
+      background-color: #f4f4f4;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      font-size: 15px;
+      color: #2c3e50;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      #time {
+        font-size: 2.2rem;
+      }
+
+      .buttons button {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Stopwatch</h1>
+  <div class="stopwatch">
+    <div id="time">00:00:00.000</div>
+    <div class="buttons">
+      <button class="start" onclick="startStopwatch()">Start</button>
+      <button class="pause" onclick="pauseStopwatch()">Pause</button>
+      <button class="reset" onclick="resetStopwatch()">Reset</button>
+      <button class="lap" onclick="recordLap()">Lap</button>
+    </div>
+    <ul id="laps"></ul>
+  </div>
+
+  <script>
+    let startTime, interval;
+    let elapsed = 0;
+    let running = false;
+
+    function updateDisplay() {
+      const time = Date.now() - startTime + elapsed;
+      const ms = time % 1000;
+      const s = Math.floor(time / 1000) % 60;
+      const m = Math.floor(time / 60000) % 60;
+      const h = Math.floor(time / 3600000);
+      document.getElementById("time").innerText =
+        `${pad(h)}:${pad(m)}:${pad(s)}.${pad(ms, 3)}`;
+    }
+
+    function pad(num, digits = 2) {
+      return num.toString().padStart(digits, '0');
+    }
+
+    function startStopwatch() {
+      if (running) return;
+      startTime = Date.now();
+      interval = setInterval(updateDisplay, 10);
+      running = true;
+    }
+
+    function pauseStopwatch() {
+      if (!running) return;
+      clearInterval(interval);
+      elapsed += Date.now() - startTime;
+      running = false;
+    }
+
+    function resetStopwatch() {
+      clearInterval(interval);
+      elapsed = 0;
+      running = false;
+      document.getElementById("time").innerText = "00:00:00.000";
+      document.getElementById("laps").innerHTML = "";
+    }
+
+    function recordLap() {
+      if (!running) return;
+      const lapTime = document.getElementById("time").innerText;
+      const lapItem = document.createElement("li");
+      lapItem.textContent = `Lap ${document.getElementById("laps").children.length + 1}: ${lapTime}`;
+      document.getElementById("laps").appendChild(lapItem);
+    }
+  </script>
+</body>
+</html>
